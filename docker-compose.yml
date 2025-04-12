@@ -1,0 +1,48 @@
+
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - mytask-network
+
+  server:
+    build: 
+      context: ./server
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongo
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/mytask
+      - PORT=5000
+      - NODE_ENV=production
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=30d
+      - ALLOWED_ORIGINS=http://localhost:8080,http://client
+    networks:
+      - mytask-network
+    restart: unless-stopped
+
+  client:
+    build:
+      context: ./client
+    ports:
+      - "8080:80"
+    depends_on:
+      - server
+    networks:
+      - mytask-network
+    restart: unless-stopped
+
+networks:
+  mytask-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
